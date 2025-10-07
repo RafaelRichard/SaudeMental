@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Questionários</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .content-wrapper { min-height: calc(100vh - 120px); }
+        .footer { background-color: #f8f9fa; padding: 20px 0; margin-top: auto; }
+        .modal-header { background-color: #0d6efd; color: white; }
+        .alert-container { position: fixed; top: 80px; right: 20px; z-index: 1055; width: 300px; }
+        .humor-icon { font-size: 2rem; cursor: pointer; transition: transform 0.2s; }
+        .humor-icon:hover { transform: scale(1.2); }
+        .humor-icon.selected { transform: scale(1.3); filter: brightness(1.2); }
+        .categoria-tag { display: inline-block; margin: 2px; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; }
+        .trend-up { color: #28a745; }
+        .trend-down { color: #dc3545; }
+        .trend-stable { color: #6c757d; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="alertContainer" class="alert-container"></div>
+
+    <main class="content-wrapper flex-grow-1">
+        <div class="container my-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-journal-medical text-primary me-2"></i>Questionários de Humor</h1>
+                    <p class="text-muted mb-0">Registre e acompanhe seu estado emocional</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalQuestionario" onclick="abrirModalNovo()">
+                    <i class="bi bi-plus-lg me-2"></i>Novo Questionário
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Humor Médio (7 dias)</h6>
+                            <h2 class="mb-0" id="humorMedio">-</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Energia Média</h6>
+                            <h2 class="mb-0" id="energiaMedia">-</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Estresse Médio</h6>
+                            <h2 class="mb-0" id="estresseMedio">-</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Tendência</h6>
+                            <h2 class="mb-0" id="tendencia">-</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Usuário</label>
+                            <select class="form-select" id="filtroUsuario" onchange="carregarQuestionarios()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Inicial</label>
+                            <input type="date" class="form-control" id="dataInicial" onchange="aplicarFiltros()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Data Final</label>
+                            <input type="date" class="form-control" id="dataFinal" onchange="aplicarFiltros()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="limparFiltros()">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="carregarQuestionarios()">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Histórico de Avaliações</h5>
+                </div>
+                <div class="card-body">
+                    <div id="questionariosContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Carregando questionários...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="modalQuestionario" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalQuestionarioLabel">
+                                <i class="bi bi-journal-medical me-2"></i>Novo Questionário
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="formQuestionario">
+                            <div class="modal-body">
+                                <input type="hidden" id="questionarioId" value="">
+                                
+                                <div class="mb-3">
+                                    <label for="usuarioId" class="form-label">Usuário <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="usuarioId" required>
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="data" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="data" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Como você está se sentindo hoje? <span class="text-danger">*</span></label>
+                                    <div class="d-flex justify-content-around p-3 bg-light rounded">
+                                        <span class="humor-icon" data-value="1" onclick="selecionarHumor(1)" title="Muito Mal">😢</span>
+                                        <span class="humor-icon" data-value="2" onclick="selecionarHumor(2)" title="Mal">😟</span>
+                                        <span class="humor-icon" data-value="3" onclick="selecionarHumor(3)" title="Neutro">😐</span>
+                                        <span class="humor-icon" data-value="4" onclick="selecionarHumor(4)" title="Bem">🙂</span>
+                                        <span class="humor-icon" data-value="5" onclick="selecionarHumor(5)" title="Muito Bem">😄</span>
+                                    </div>
+                                    <input type="hidden" id="humor" required>
+                                    <div class="invalid-feedback text-center"></div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="nivelEnergia" class="form-label">
+                                            Nível de Energia <span class="text-danger">*</span>
+                                            <span class="badge bg-success" id="energiaValue">5</span>
+                                        </label>
+                                        <input type="range" class="form-range" min="1" max="10" value="5" 
+                                               id="nivelEnergia" oninput="document.getElementById('energiaValue').textContent = this.value">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="nivelEstresse" class="form-label">
+                                            Nível de Estresse <span class="text-danger">*</span>
+                                            <span class="badge bg-warning" id="estresseValue">5</span>
+                                        </label>
+                                        <input type="range" class="form-range" min="1" max="10" value="5" 
+                                               id="nivelEstresse" oninput="document.getElementById('estresseValue').textContent = this.value">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Categorias (selecione o que sentiu hoje)</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="ANSIEDADE" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Ansiedade
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="DEPRESSAO" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-cloud-drizzle me-1"></i>Depressão
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="ESTRESSE" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-lightning me-1"></i>Estresse
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="SONO" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-moon me-1"></i>Problemas de Sono
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="MOTIVACAO" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-rocket me-1"></i>Falta de Motivação
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary categoria-btn" data-categoria="FELICIDADE" onclick="toggleCategoria(this)">
+                                            <i class="bi bi-emoji-smile me-1"></i>Felicidade
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="observacoes" class="form-label">Observações</label>
+                                    <textarea class="form-control" id="observacoes" rows="3" 
+                                              placeholder="Descreva como foi seu dia, o que contribuiu para seu humor..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="btnSalvar">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer bg-light text-center">
+        <div class="container"><span class="text-muted">&copy; 2025 Saúde Mental App</span></div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let questionarioEditando = null;
+        let usuarios = [];
+        let categoriasSelecionadas = [];
+
+        function mostrarAlerta(tipo, titulo, mensagem, tempo = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show">
+                    <strong>${titulo}</strong> ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) new bootstrap.Alert(alert).close();
+            }, tempo);
+        }
+
+        async function fazerRequisicao(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    ...options
+                });
+                if (response.status === 204) return null;
+                const data = await response.json().catch(() => response.text());
+                if (!response.ok) throw new Error(data || `Erro ${response.status}`);
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await carregarUsuarios();
+            await carregarQuestionarios();
+            document.getElementById('data').valueAsDate = new Date();
+            
+            const dataFinal = new Date();
+            const dataInicial = new Date();
+            dataInicial.setDate(dataInicial.getDate() - 30);
+            document.getElementById('dataInicial').valueAsDate = dataInicial;
+            document.getElementById('dataFinal').valueAsDate = dataFinal;
+
+            document.getElementById('formQuestionario')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                salvarQuestionario();
+            });
+        });
+
+        async function carregarUsuarios() {
+            try {
+                usuarios = await fazerRequisicao('/api/usuarios');
+                const selectUsuario = document.getElementById('usuarioId');
+                const selectFiltro = document.getElementById('filtroUsuario');
+                selectUsuario.innerHTML = '<option value="">Selecione...</option>';
+                selectFiltro.innerHTML = '<option value="">Todos</option>';
+                usuarios.forEach(u => {
+                    selectUsuario.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
+                    selectFiltro.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+            }
+        }
+
+        async function carregarQuestionarios() {
+            const usuarioId = document.getElementById('filtroUsuario')?.value;
+            const url = usuarioId ? `/api/questionarios/usuario/${usuarioId}` : '/api/questionarios';
+            
+            try {
+                const questionarios = await fazerRequisicao(url);
+                renderizarQuestionarios(questionarios);
+                if (usuarioId) {
+                    await atualizarEstatisticas(usuarioId);
+                } else {
+                    limparEstatisticas();
+                }
+            } catch (error) {
+                document.getElementById('questionariosContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar questionários.
+                    </div>`;
+            }
+        }
+
+        function renderizarQuestionarios(questionarios) {
+            const container = document.getElementById('questionariosContainer');
+            
+            if (!questionarios || questionarios.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p>Nenhum questionário registrado.</p>
+                    </div>`;
+                return;
+            }
+
+            const emojis = ['😢', '😟', '😐', '🙂', '😄'];
+            let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Data</th><th>Usuário</th><th>Humor</th><th>Energia</th><th>Estresse</th><th>Categorias</th><th>Ações</th></tr></thead><tbody>';
+            
+            questionarios.forEach(q => {
+                const usuario = usuarios.find(u => u.id === q.usuarioId);
+                const categorias = q.categorias ? q.categorias.split(',').map(c => 
+                    `<span class="categoria-tag bg-secondary text-white">${c}</span>`
+                ).join(' ') : '';
+                
+                html += `
+                    <tr>
+                        <td>${new Date(q.data).toLocaleDateString('pt-BR')}</td>
+                        <td>${usuario?.nome || 'Desconhecido'}</td>
+                        <td><span style="font-size: 1.5rem;">${emojis[q.humor - 1] || '😐'}</span> ${q.humor}/5</td>
+                        <td><div class="progress" style="width: 100px;"><div class="progress-bar bg-success" style="width: ${q.nivelEnergia * 10}%">${q.nivelEnergia}</div></div></td>
+                        <td><div class="progress" style="width: 100px;"><div class="progress-bar bg-warning" style="width: ${q.nivelEstresse * 10}%">${q.nivelEstresse}</div></div></td>
+                        <td>${categorias}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="abrirModalEditar(${q.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirQuestionario(${q.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+
+        async function atualizarEstatisticas(usuarioId) {
+            try {
+                const stats = await fazerRequisicao(`/api/questionarios/usuario/${usuarioId}/estatisticas`);
+                document.getElementById('humorMedio').textContent = stats.humorMedio?.toFixed(1) || '-';
+                document.getElementById('energiaMedia').textContent = stats.energiaMedia?.toFixed(1) || '-';
+                document.getElementById('estresseMedio').textContent = stats.estresseMedio?.toFixed(1) || '-';
+                
+                const tendencia = stats.tendencia || 'Estável';
+                const icone = tendencia === 'Melhorando' ? '↗️' : (tendencia === 'Piorando' ? '↘️' : '→');
+                document.getElementById('tendencia').textContent = `${icone} ${tendencia}`;
+            } catch (error) {
+                limparEstatisticas();
+            }
+        }
+
+        function limparEstatisticas() {
+            document.getElementById('humorMedio').textContent = '-';
+            document.getElementById('energiaMedia').textContent = '-';
+            document.getElementById('estresseMedio').textContent = '-';
+            document.getElementById('tendencia').textContent = '-';
+        }
+
+        function selecionarHumor(valor) {
+            document.querySelectorAll('.humor-icon').forEach(icon => icon.classList.remove('selected'));
+            document.querySelector(`.humor-icon[data-value="${valor}"]`).classList.add('selected');
+            document.getElementById('humor').value = valor;
+        }
+
+        function toggleCategoria(btn) {
+            const categoria = btn.dataset.categoria;
+            btn.classList.toggle('btn-outline-secondary');
+            btn.classList.toggle('btn-primary');
+            
+            if (categoriasSelecionadas.includes(categoria)) {
+                categoriasSelecionadas = categoriasSelecionadas.filter(c => c !== categoria);
+            } else {
+                categoriasSelecionadas.push(categoria);
+            }
+        }
+
+        function abrirModalNovo() {
+            questionarioEditando = null;
+            categoriasSelecionadas = [];
+            document.getElementById('modalQuestionarioLabel').innerHTML = '<i class="bi bi-journal-medical me-2"></i>Novo Questionário';
+            document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+            document.getElementById('formQuestionario').reset();
+            document.getElementById('questionarioId').value = '';
+            document.getElementById('data').valueAsDate = new Date();
+            document.getElementById('nivelEnergia').value = 5;
+            document.getElementById('nivelEstresse').value = 5;
+            document.getElementById('energiaValue').textContent = '5';
+            document.getElementById('estresseValue').textContent = '5';
+            document.querySelectorAll('.humor-icon').forEach(icon => icon.classList.remove('selected'));
+            document.querySelectorAll('.categoria-btn').forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+            });
+            limparValidacoes();
+        }
+
+        async function abrirModalEditar(id) {
+            try {
+                const q = await fazerRequisicao(`/api/questionarios/${id}`);
+                questionarioEditando = q;
+                categoriasSelecionadas = q.categorias ? q.categorias.split(',') : [];
+                
+                document.getElementById('modalQuestionarioLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Questionário';
+                document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Atualizar';
+                document.getElementById('questionarioId').value = q.id;
+                document.getElementById('usuarioId').value = q.usuarioId;
+                document.getElementById('data').value = q.data;
+                document.getElementById('nivelEnergia').value = q.nivelEnergia;
+                document.getElementById('nivelEstresse').value = q.nivelEstresse;
+                document.getElementById('energiaValue').textContent = q.nivelEnergia;
+                document.getElementById('estresseValue').textContent = q.nivelEstresse;
+                document.getElementById('observacoes').value = q.observacoes || '';
+                
+                selecionarHumor(q.humor);
+                
+                document.querySelectorAll('.categoria-btn').forEach(btn => {
+                    if (categoriasSelecionadas.includes(btn.dataset.categoria)) {
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-primary');
+                    }
+                });
+                
+                limparValidacoes();
+                new bootstrap.Modal(document.getElementById('modalQuestionario')).show();
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar: ' + error.message);
+            }
+        }
+
+        async function salvarQuestionario() {
+            const questionario = {
+                usuarioId: parseInt(document.getElementById('usuarioId').value),
+                data: document.getElementById('data').value,
+                humor: parseInt(document.getElementById('humor').value),
+                nivelEnergia: parseInt(document.getElementById('nivelEnergia').value),
+                nivelEstresse: parseInt(document.getElementById('nivelEstresse').value),
+                categorias: categoriasSelecionadas.join(',') || null,
+                observacoes: document.getElementById('observacoes').value.trim() || null
+            };
+
+            if (!validarFormulario(questionario)) return;
+
+            const btnSalvar = document.getElementById('btnSalvar');
+            const textoOriginal = btnSalvar.innerHTML;
+            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+            btnSalvar.disabled = true;
+
+            try {
+                if (questionarioEditando) {
+                    await fazerRequisicao(`/api/questionarios/${questionarioEditando.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(questionario)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Questionário atualizado.');
+                } else {
+                    await fazerRequisicao('/api/questionarios', {
+                        method: 'POST',
+                        body: JSON.stringify(questionario)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Questionário registrado.');
+                }
+                bootstrap.Modal.getInstance(document.getElementById('modalQuestionario')).hide();
+                setTimeout(() => carregarQuestionarios(), 500);
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', error.message || 'Erro ao salvar.');
+            } finally {
+                btnSalvar.innerHTML = textoOriginal;
+                btnSalvar.disabled = false;
+            }
+        }
+
+        function validarFormulario(q) {
+            let valido = true;
+            limparValidacoes();
+            if (!q.usuarioId) {
+                mostrarErroValidacao('usuarioId', 'Selecione um usuário.');
+                valido = false;
+            }
+            if (!q.data) {
+                mostrarErroValidacao('data', 'Informe a data.');
+                valido = false;
+            }
+            if (!q.humor) {
+                mostrarErroValidacao('humor', 'Selecione como você está se sentindo.');
+                valido = false;
+            }
+            return valido;
+        }
+
+        function mostrarErroValidacao(campo, mensagem) {
+            const input = document.getElementById(campo);
+            const feedback = input.parentNode.querySelector('.invalid-feedback');
+            input.classList.add('is-invalid');
+            if (feedback) feedback.textContent = mensagem;
+        }
+
+        function limparValidacoes() {
+            document.querySelectorAll('#formQuestionario .form-control, #formQuestionario .form-select').forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        async function excluirQuestionario(id) {
+            if (confirm('Tem certeza que deseja excluir este questionário?')) {
+                try {
+                    await fazerRequisicao(`/api/questionarios/${id}`, { method: 'DELETE' });
+                    mostrarAlerta('success', 'Sucesso!', 'Questionário excluído.');
+                    setTimeout(() => carregarQuestionarios(), 500);
+                } catch (error) {
+                    mostrarAlerta('danger', 'Erro!', 'Não foi possível excluir.');
+                }
+            }
+        }
+
+        function aplicarFiltros() {
+            carregarQuestionarios();
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtroUsuario').value = '';
+            const dataFinal = new Date();
+            const dataInicial = new Date();
+            dataInicial.setDate(dataInicial.getDate() - 30);
+            document.getElementById('dataInicial').valueAsDate = dataInicial;
+            document.getElementById('dataFinal').valueAsDate = dataFinal;
+            carregarQuestionarios();
+        }
+    </script>
+</body>
+</html>

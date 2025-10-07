@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Usuários</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .content-wrapper {
+            min-height: calc(100vh - 120px);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 0;
+            margin-top: auto;
+        }
+        .btn-group-actions {
+            white-space: nowrap;
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .modal-header {
+            background-color: #007bff;
+            color: white;
+        }
+        .alert-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1055;
+            width: 300px;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Navegação -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-heart-pulse me-2"></i>
+                Saúde Mental App
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Container de Alertas -->
+    <div id="alertContainer" class="alert-container"></div>
+
+    <!-- Conteúdo Principal -->
+    <main class="content-wrapper flex-grow-1">
+        <div class="container my-4">
+        <!-- Cabeçalho da Página -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="bi bi-people text-primary me-2"></i>
+                    Gerenciamento de Usuários
+                </h1>
+                <p class="text-muted mb-0">Gerencie os usuários cadastrados no sistema</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalUsuario" onclick="abrirModalNovo()">
+                    <i class="bi bi-plus-lg me-2"></i>
+                    Novo Usuário
+                </button>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+      <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Total de Usuários</h5>
+                                <h3 class="mb-0" th:text="${#lists.size(usuarios)}">0</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-people fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> 
+
+        <!-- Filtros e Busca -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="inputBusca" placeholder="Buscar por nome ou email...">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="limparFiltros()">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                Limpar
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="carregarUsuarios()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Usuários -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-table me-2"></i>
+                    Lista de Usuários
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0" id="tabelaUsuarios">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Data Cadastro</th>
+                                <th scope="col" class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(usuarios)}">
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        <p>Nenhum usuário cadastrado ainda.</p>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario" onclick="abrirModalNovo()">
+                                            <i class="bi bi-plus-lg me-1"></i>
+                                            Cadastrar Primeiro Usuário
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:each="usuario : ${usuarios}" th:unless="${#lists.isEmpty(usuarios)}">
+                                <th scope="row" th:text="${usuario.id}">1</th>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 32px; height: 32px; font-size: 14px; font-weight: bold;">
+                                            <span th:text="${#strings.substring(usuario.nome, 0, 1).toUpperCase()}">U</span>
+                                        </div>
+                                        <span th:text="${usuario.nome}">Nome do Usuário</span>
+                                    </div>
+                                </td>
+                                <td th:text="${usuario.email}">email@exemplo.com</td>
+                                <td>
+                                    <span class="badge bg-secondary">Não disponível</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                th:data-id="${usuario.id}"
+                                                onclick="abrirModalEditar(this.dataset.id)"
+                                                title="Editar usuário">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                th:data-id="${usuario.id}"
+                                                th:data-nome="${usuario.nome}"
+                                                onclick="excluirUsuario(this.dataset.id, this.dataset.nome)"
+                                                title="Excluir usuário">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Adicionar/Editar Usuário -->
+        <div class="modal fade" id="modalUsuario" tabindex="-1" aria-labelledby="modalUsuarioLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalUsuarioLabel">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Novo Usuário
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="formUsuario">
+                        <div class="modal-body">
+                            <input type="hidden" id="usuarioId" value="">
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="nome" class="form-label">
+                                        <i class="bi bi-person me-1"></i>
+                                        Nome Completo <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="nome" name="nome" required
+                                           placeholder="Digite o nome completo do usuário">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="email" class="form-label">
+                                        <i class="bi bi-envelope me-1"></i>
+                                        Email <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" required
+                                           placeholder="Digite o email do usuário">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="senha" class="form-label">
+                                        <i class="bi bi-lock me-1"></i>
+                                        Senha <span class="text-danger" id="senhaObrigatoria">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="senha" name="senha"
+                                               placeholder="Digite a senha (mínimo 6 caracteres)">
+                                        <button class="btn btn-outline-secondary" type="button" id="toggleSenha">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text" id="senhaAjuda">
+                                        A senha deve ter pelo menos 6 caracteres.
+                                    </div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info" role="alert">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Informação:</strong> Os campos marcados com <span class="text-danger">*</span> são obrigatórios.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-lg me-1"></i>
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="btnSalvar">
+                                <i class="bi bi-check-lg me-1"></i>
+                                Salvar Usuário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer bg-light text-center">
+        <div class="container">
+            <span class="text-muted">
+                &copy; 2025 Saúde Mental App. Desenvolvido para apoio ao bem-estar mental.
+            </span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Funções JavaScript Globais -->
+    <script>
+        // Função para mostrar alertas
+        function mostrarAlerta(tipo, titulo, mensagem, tempo = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                    <strong>${titulo}</strong> ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            
+            // Auto-remover após o tempo especificado
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, tempo);
+        }
+
+        // Função para fazer requisições à API
+        async function fazerRequisicao(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                const data = await response.json().catch(() => null);
+
+                if (!response.ok) {
+                    throw new Error(data || `Erro ${response.status}: ${response.statusText}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                throw error;
+            }
+        }
+
+        // Função para confirmar exclusão
+        function confirmarExclusao(callback, mensagem = 'Tem certeza que deseja excluir este item?') {
+            if (confirm(mensagem)) {
+                callback();
+            }
+        }
+
+        // Variáveis globais da página
+        let usuarioEditando = null;
+
+        // Inicialização da página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('>>> DOM carregado, configurando eventos...');
+            configurarEventos();
+            aplicarFiltros();
+        });
+
+        function configurarEventos() {
+            // Busca em tempo real
+            const inputBusca = document.getElementById('inputBusca');
+            if (inputBusca) {
+                inputBusca.addEventListener('input', aplicarFiltros);
+            }
+            
+            // Toggle de visualização da senha
+            const toggleSenha = document.getElementById('toggleSenha');
+            if (toggleSenha) {
+                toggleSenha.addEventListener('click', function() {
+                    const senhaInput = document.getElementById('senha');
+                    const icon = this.querySelector('i');
+                    
+                    if (senhaInput.type === 'password') {
+                        senhaInput.type = 'text';
+                        icon.classList.replace('bi-eye', 'bi-eye-slash');
+                    } else {
+                        senhaInput.type = 'password';
+                        icon.classList.replace('bi-eye-slash', 'bi-eye');
+                    }
+                });
+            }
+
+            // Submissão do formulário
+            const formUsuario = document.getElementById('formUsuario');
+            if (formUsuario) {
+                formUsuario.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    salvarUsuario();
+                });
+            }
+
+            // Limpar validações quando modal é fechado
+            const modalUsuario = document.getElementById('modalUsuario');
+            if (modalUsuario) {
+                modalUsuario.addEventListener('hidden.bs.modal', function() {
+                    limparValidacoes();
+                });
+            }
+        }
+
+        function abrirModalNovo() {
+            console.log('>>> Abrindo modal para novo usuário');
+            usuarioEditando = null;
+            document.getElementById('modalUsuarioLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>Novo Usuário';
+            document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar Usuário';
+            document.getElementById('formUsuario').reset();
+            document.getElementById('usuarioId').value = '';
+            document.getElementById('senhaObrigatoria').style.display = 'inline';
+            document.getElementById('senha').required = true;
+            document.getElementById('senhaAjuda').textContent = 'A senha deve ter pelo menos 6 caracteres.';
+            limparValidacoes();
+        }
+
+        async function abrirModalEditar(id) {
+            console.log('>>> Tentando editar usuário com ID:', id);
+            try {
+                const usuario = await fazerRequisicao(`/api/usuarios/${id}`);
+                console.log('>>> Usuário carregado:', usuario);
+                usuarioEditando = usuario;
+                
+                document.getElementById('modalUsuarioLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Usuário';
+                document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Atualizar Usuário';
+                document.getElementById('usuarioId').value = usuario.id;
+                document.getElementById('nome').value = usuario.nome;
+                document.getElementById('email').value = usuario.email;
+                document.getElementById('senha').value = '';
+                document.getElementById('senhaObrigatoria').style.display = 'none';
+                document.getElementById('senha').required = false;
+                document.getElementById('senhaAjuda').textContent = 'Deixe em branco para manter a senha atual.';
+                
+                limparValidacoes();
+                
+                const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('>>> Erro detalhado:', error);
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar os dados do usuário: ' + error.message);
+            }
+        }
+
+        async function salvarUsuario() {
+            const form = document.getElementById('formUsuario');
+            const formData = new FormData(form);
+            
+            const usuario = {
+                nome: formData.get('nome').trim(),
+                email: formData.get('email').trim(),
+                senha: formData.get('senha').trim()
+            };
+
+            // Validações básicas
+            if (!validarFormulario(usuario)) {
+                return;
+            }
+
+            const btnSalvar = document.getElementById('btnSalvar');
+            const textoOriginal = btnSalvar.innerHTML;
+            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Salvando...';
+            btnSalvar.disabled = true;
+
+            try {
+                let response;
+                
+                if (usuarioEditando) {
+                    // Se senha estiver vazia, não enviar
+                    if (!usuario.senha) {
+                        delete usuario.senha;
+                    }
+                    response = await fazerRequisicao(`/api/usuarios/${usuarioEditando.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(usuario)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Usuário atualizado com sucesso.');
+                } else {
+                    response = await fazerRequisicao('/api/usuarios', {
+                        method: 'POST',
+                        body: JSON.stringify(usuario)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Usuário criado com sucesso.');
+                }
+
+                // Fechar modal e recarregar página
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalUsuario'));
+                modal.hide();
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', error.message || 'Erro ao salvar usuário.');
+                console.error('Erro ao salvar usuário:', error);
+            } finally {
+                btnSalvar.innerHTML = textoOriginal;
+                btnSalvar.disabled = false;
+            }
+        }
+
+        function validarFormulario(usuario) {
+            let valido = true;
+            limparValidacoes();
+
+            // Validar nome
+            if (!usuario.nome || usuario.nome.length < 2) {
+                mostrarErroValidacao('nome', 'Nome deve ter pelo menos 2 caracteres.');
+                valido = false;
+            }
+
+            // Validar email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!usuario.email || !emailRegex.test(usuario.email)) {
+                mostrarErroValidacao('email', 'Email deve ter formato válido.');
+                valido = false;
+            }
+
+            // Validar senha (apenas para novo usuário ou se senha foi preenchida)
+            if (!usuarioEditando || usuario.senha) {
+                if (!usuario.senha || usuario.senha.length < 6) {
+                    mostrarErroValidacao('senha', 'Senha deve ter pelo menos 6 caracteres.');
+                    valido = false;
+                }
+            }
+
+            return valido;
+        }
+
+        function mostrarErroValidacao(campo, mensagem) {
+            const input = document.getElementById(campo);
+            const feedback = input.parentNode.querySelector('.invalid-feedback') || 
+                           input.nextElementSibling;
+            
+            input.classList.add('is-invalid');
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = mensagem;
+            }
+        }
+
+        function limparValidacoes() {
+            const inputs = document.querySelectorAll('#formUsuario .form-control');
+            inputs.forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        async function excluirUsuario(id, nome) {
+            confirmarExclusao(async () => {
+                try {
+                    await fazerRequisicao(`/api/usuarios/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    mostrarAlerta('success', 'Sucesso!', `Usuário "${nome}" excluído com sucesso.`);
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                    
+                } catch (error) {
+                    mostrarAlerta('danger', 'Erro!', 'Não foi possível excluir o usuário.');
+                    console.error('Erro ao excluir usuário:', error);
+                }
+            }, `Tem certeza que deseja excluir o usuário "${nome}"? Esta ação não pode ser desfeita.`);
+        }
+
+        function carregarUsuarios() {
+            window.location.reload();
+        }
+
+        function aplicarFiltros() {
+            const inputBusca = document.getElementById('inputBusca');
+            if (!inputBusca) return;
+            
+            const filtro = inputBusca.value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabelaUsuarios tbody tr:not(.empty-row)');
+            
+            linhas.forEach(linha => {
+                const texto = linha.textContent.toLowerCase();
+                if (texto.includes(filtro)) {
+                    linha.style.display = '';
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+        }
+
+        function limparFiltros() {
+            const inputBusca = document.getElementById('inputBusca');
+            if (inputBusca) {
+                inputBusca.value = '';
+                aplicarFiltros();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .content-wrapper { min-height: calc(100vh - 120px); }
+        .footer { background-color: #f8f9fa; padding: 20px 0; margin-top: auto; }
+        .alert-container { position: fixed; top: 80px; right: 20px; z-index: 1055; width: 300px; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .chart-container { position: relative; height: 300px; }
+        .streak-display { font-size: 3rem; font-weight: bold; color: #ff6b6b; }
+        .user-selector { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="alertContainer" class="alert-container"></div>
+
+    <main class="content-wrapper flex-grow-1">
+        <div class="container my-4">
+            <div class="mb-4">
+                <h1 class="h2 mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Dashboard de Bem-Estar</h1>
+                <p class="text-muted mb-0">Acompanhe seu progresso e estatísticas de saúde mental</p>
+            </div>
+
+            <div class="card user-selector mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-2"><i class="bi bi-person-circle me-2"></i>Selecione o Usuário</h5>
+                            <select class="form-select form-select-lg" id="usuarioSelecionado" onchange="carregarDashboard()">
+                                <option value="">Escolha um usuário...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="d-flex justify-content-end align-items-center gap-3">
+                                <div>
+                                    <small class="d-block opacity-75">Última atualização</small>
+                                    <strong id="ultimaAtualizacao">-</strong>
+                                </div>
+                                <button class="btn btn-light" onclick="carregarDashboard()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboardContent" style="display: none;">
+                <!-- Cards de Estatísticas -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title opacity-75">Exercícios Realizados</h6>
+                                        <h2 class="mb-0" id="exerciciosRealizados">0</h2>
+                                        <small id="percentualRealizados" class="opacity-75">0% do total</small>
+                                    </div>
+                                    <div class="align-self-center"><i class="bi bi-check-circle fs-1"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title opacity-75">Exercícios Pendentes</h6>
+                                        <h2 class="mb-0" id="exerciciosPendentes">0</h2>
+                                        <small id="percentualPendentes" class="opacity-75">0% do total</small>
+                                    </div>
+                                    <div class="align-self-center"><i class="bi bi-hourglass-split fs-1"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card stat-card bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title opacity-75">Humor Médio (7d)</h6>
+                                        <h2 class="mb-0" id="humorMedio">-</h2>
+                                        <small id="tendenciaHumor" class="opacity-75">-</small>
+                                    </div>
+                                    <div class="align-self-center"><i class="bi bi-emoji-smile fs-1"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body text-white">
+                                <div class="text-center">
+                                    <h6 class="card-title opacity-75">Sequência Atual</h6>
+                                    <div class="streak-display" id="streakAtual">🔥 0</div>
+                                    <small class="opacity-75">dias consecutivos</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Progressão de Exercícios (7 dias)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="chartExercicios"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolução do Humor (7 dias)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="chartHumor"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Níveis de Energia e Estresse</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="chartEnergiaEstresse"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Distribuição de Exercícios</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="chartDistribuicao"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recomendações -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Recomendações Personalizadas</h5>
+                            </div>
+                            <div class="card-body" id="recomendacoesContainer">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mensagemInicial" class="text-center py-5">
+                <i class="bi bi-graph-up-arrow display-1 text-muted"></i>
+                <h3 class="mt-3 text-muted">Selecione um usuário para visualizar o dashboard</h3>
+                <p class="text-muted">Escolha um usuário no menu acima para ver as estatísticas completas</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer bg-light text-center">
+        <div class="container"><span class="text-muted">&copy; 2025 Saúde Mental App</span></div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let chartExercicios, chartHumor, chartEnergiaEstresse, chartDistribuicao;
+
+        function mostrarAlerta(tipo, titulo, mensagem, tempo = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show">
+                    <strong>${titulo}</strong> ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) new bootstrap.Alert(alert).close();
+            }, tempo);
+        }
+
+        async function fazerRequisicao(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    ...options
+                });
+                const data = await response.json().catch(() => response.text());
+                if (!response.ok) throw new Error(data || `Erro ${response.status}`);
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await carregarUsuarios();
+        });
+
+        async function carregarUsuarios() {
+            try {
+                const usuarios = await fazerRequisicao('/api/usuarios');
+                const select = document.getElementById('usuarioSelecionado');
+                select.innerHTML = '<option value="">Escolha um usuário...</option>';
+                usuarios.forEach(u => {
+                    select.innerHTML += `<option value="${u.id}">${u.nome} - ${u.email}</option>`;
+                });
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar usuários.');
+            }
+        }
+
+        async function carregarDashboard() {
+            const usuarioId = document.getElementById('usuarioSelecionado').value;
+            
+            if (!usuarioId) {
+                document.getElementById('dashboardContent').style.display = 'none';
+                document.getElementById('mensagemInicial').style.display = 'block';
+                return;
+            }
+
+            try {
+                document.getElementById('mensagemInicial').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+
+                const dashboard = await fazerRequisicao(`/api/dashboard/usuario/${usuarioId}`);
+                
+                atualizarCards(dashboard);
+                await criarGraficos(usuarioId, dashboard);
+                gerarRecomendacoes(dashboard);
+                
+                document.getElementById('ultimaAtualizacao').textContent = new Date().toLocaleTimeString('pt-BR');
+                
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar o dashboard: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        function atualizarCards(dashboard) {
+            const statsExercicio = dashboard.estatisticasExercicio || {};
+            const statsQuestionario = dashboard.estatisticasQuestionario || {};
+
+            document.getElementById('exerciciosRealizados').textContent = statsExercicio.totalRealizados || 0;
+            document.getElementById('exerciciosPendentes').textContent = statsExercicio.totalPendentes || 0;
+            document.getElementById('percentualRealizados').textContent = 
+                `${(statsExercicio.percentualRealizados || 0).toFixed(0)}% do total`;
+            document.getElementById('percentualPendentes').textContent = 
+                `${(statsExercicio.percentualPendentes || 0).toFixed(0)}% do total`;
+            
+            document.getElementById('humorMedio').textContent = 
+                (statsQuestionario.humorMedio || 0).toFixed(1) + '/5';
+            document.getElementById('tendenciaHumor').textContent = 
+                statsQuestionario.tendencia || 'Sem dados';
+            
+            const streak = statsExercicio.streak || 0;
+            document.getElementById('streakAtual').textContent = `🔥 ${streak}`;
+        }
+
+        async function criarGraficos(usuarioId, dashboard) {
+            const hoje = new Date();
+            const ultimos7Dias = [];
+            for (let i = 6; i >= 0; i--) {
+                const data = new Date(hoje);
+                data.setDate(data.getDate() - i);
+                ultimos7Dias.push(data.toISOString().split('T')[0]);
+            }
+
+            // Dados simulados para demonstração
+            const labels = ultimos7Dias.map(d => {
+                const date = new Date(d);
+                return `${date.getDate()}/${date.getMonth() + 1}`;
+            });
+
+            // Gráfico de Exercícios
+            const ctxExercicios = document.getElementById('chartExercicios').getContext('2d');
+            if (chartExercicios) chartExercicios.destroy();
+            chartExercicios = new Chart(ctxExercicios, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Realizados',
+                        data: [3, 5, 2, 4, 6, 3, 5],
+                        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    }, {
+                        label: 'Pendentes',
+                        data: [2, 1, 3, 1, 0, 2, 1],
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Gráfico de Humor
+            const ctxHumor = document.getElementById('chartHumor').getContext('2d');
+            if (chartHumor) chartHumor.destroy();
+            chartHumor = new Chart(ctxHumor, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Humor',
+                        data: [3, 4, 3, 4, 5, 4, 4],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 5 } }
+                }
+            });
+
+            // Gráfico de Energia e Estresse
+            const ctxEnergiaEstresse = document.getElementById('chartEnergiaEstresse').getContext('2d');
+            if (chartEnergiaEstresse) chartEnergiaEstresse.destroy();
+            chartEnergiaEstresse = new Chart(ctxEnergiaEstresse, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Energia',
+                        data: [7, 8, 6, 7, 8, 7, 8],
+                        borderColor: 'rgb(40, 167, 69)',
+                        tension: 0.4
+                    }, {
+                        label: 'Estresse',
+                        data: [6, 5, 7, 6, 4, 5, 4],
+                        borderColor: 'rgb(255, 193, 7)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 10 } }
+                }
+            });
+
+            // Gráfico de Distribuição
+            const ctxDistribuicao = document.getElementById('chartDistribuicao').getContext('2d');
+            if (chartDistribuicao) chartDistribuicao.destroy();
+            chartDistribuicao = new Chart(ctxDistribuicao, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Respiração', 'Meditação', 'Diário', 'Relaxamento', 'Mindfulness'],
+                    datasets: [{
+                        data: [8, 6, 5, 4, 3],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function gerarRecomendacoes(dashboard) {
+            const statsExercicio = dashboard.estatisticasExercicio || {};
+            const statsQuestionario = dashboard.estatisticasQuestionario || {};
+            const recomendacoes = [];
+
+            if ((statsExercicio.percentualRealizados || 0) < 50) {
+                recomendacoes.push({
+                    icone: 'bi-exclamation-triangle',
+                    cor: 'warning',
+                    titulo: 'Baixa Realização de Exercícios',
+                    texto: 'Você completou menos de 50% dos exercícios. Tente estabelecer uma rotina diária!'
+                });
+            }
+
+            if ((statsExercicio.streak || 0) === 0) {
+                recomendacoes.push({
+                    icone: 'bi-fire',
+                    cor: 'danger',
+                    titulo: 'Sem Sequência Ativa',
+                    texto: 'Comece hoje um exercício para iniciar sua sequência de dias consecutivos!'
+                });
+            } else if ((statsExercicio.streak || 0) >= 7) {
+                recomendacoes.push({
+                    icone: 'bi-trophy',
+                    cor: 'success',
+                    titulo: 'Parabéns pela Consistência!',
+                    texto: `Você manteve ${statsExercicio.streak} dias consecutivos! Continue assim!`
+                });
+            }
+
+            if ((statsQuestionario.humorMedio || 0) < 3) {
+                recomendacoes.push({
+                    icone: 'bi-heart-pulse',
+                    cor: 'info',
+                    titulo: 'Humor Abaixo da Média',
+                    texto: 'Seu humor tem estado baixo. Considere fazer mais exercícios de respiração e meditação.'
+                });
+            }
+
+            if (statsQuestionario.tendencia === 'Piorando') {
+                recomendacoes.push({
+                    icone: 'bi-arrow-down-circle',
+                    cor: 'danger',
+                    titulo: 'Tendência de Piora',
+                    texto: 'Seu humor tem piorado nos últimos dias. Converse com um profissional se necessário.'
+                });
+            }
+
+            if (statsQuestionario.tendencia === 'Melhorando') {
+                recomendacoes.push({
+                    icone: 'bi-arrow-up-circle',
+                    cor: 'success',
+                    titulo: 'Tendência Positiva!',
+                    texto: 'Seu humor está melhorando! Continue com seus exercícios atuais.'
+                });
+            }
+
+            if (recomendacoes.length === 0) {
+                recomendacoes.push({
+                    icone: 'bi-check-circle',
+                    cor: 'success',
+                    titulo: 'Tudo Ótimo!',
+                    texto: 'Você está mantendo uma boa rotina de bem-estar. Continue assim!'
+                });
+            }
+
+            const container = document.getElementById('recomendacoesContainer');
+            container.innerHTML = recomendacoes.map(r => `
+                <div class="alert alert-${r.cor} d-flex align-items-start">
+                    <i class="bi ${r.icone} fs-3 me-3"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">${r.titulo}</h6>
+                        <p class="mb-0">${r.texto}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

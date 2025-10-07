@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Início</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .hero-section { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+            margin-bottom: 40px;
+        }
+        .feature-card { 
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .feature-card:hover { 
+            transform: translateY(-10px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .feature-icon { 
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .footer { 
+            background-color: #f8f9fa;
+            padding: 30px 0;
+            margin-top: 60px;
+        }
+        .cta-button { 
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero-section">
+        <div class="container text-center">
+            <i class="bi bi-heart-pulse display-1 mb-4"></i>
+            <h1 class="display-3 fw-bold mb-3">Cuide da Sua Saúde Mental</h1>
+            <p class="lead mb-4">Uma plataforma completa para monitorar, registrar e melhorar seu bem-estar emocional</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="/dashboard" class="btn btn-light btn-lg cta-button">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Ver Dashboard
+                </a>
+                <a href="/exercicios" class="btn btn-outline-light btn-lg cta-button">
+                    <i class="bi bi-clipboard-heart me-2"></i>Exercícios
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">Funcionalidades</h2>
+            <p class="lead text-muted">Tudo que você precisa para cuidar da sua saúde mental em um só lugar</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card feature-card text-center p-4">
+                    <div class="card-body">
+                        <i class="bi bi-people feature-icon text-primary"></i>
+                        <h5 class="card-title">Gerenciamento de Usuários</h5>
+                        <p class="card-text">Cadastre e gerencie múltiplos perfis de usuários com informações completas.</p>
+                        <a href="/usuarios" class="btn btn-outline-primary">Acessar <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card feature-card text-center p-4">
+                    <div class="card-body">
+                        <i class="bi bi-clipboard-heart feature-icon text-success"></i>
+                        <h5 class="card-title">Exercícios de Bem-Estar</h5>
+                        <p class="card-text">Acesse exercícios de respiração, meditação, relaxamento e mindfulness.</p>
+                        <a href="/exercicios" class="btn btn-outline-success">Acessar <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card feature-card text-center p-4">
+                    <div class="card-body">
+                        <i class="bi bi-calendar-check feature-icon text-warning"></i>
+                        <h5 class="card-title">Registro Diário</h5>
+                        <p class="card-text">Acompanhe seus exercícios realizados e mantenha uma sequência consistente.</p>
+                        <a href="/registros" class="btn btn-outline-warning">Acessar <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card feature-card text-center p-4">
+                    <div class="card-body">
+                        <i class="bi bi-journal-medical feature-icon text-info"></i>
+                        <h5 class="card-title">Questionários de Humor</h5>
+                        <p class="card-text">Registre seu estado emocional diário e acompanhe tendências de humor.</p>
+                        <a href="/questionarios" class="btn btn-outline-info">Acessar <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2 class="display-6 fw-bold mb-3">Dashboard de Estatísticas</h2>
+                <p class="lead mb-4">Visualize seu progresso através de gráficos interativos e estatísticas detalhadas:</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Sequência de dias consecutivos</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Evolução do humor ao longo do tempo</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Níveis de energia e estresse</li>
+                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Recomendações personalizadas</li>
+                </ul>
+                <a href="/dashboard" class="btn btn-primary btn-lg">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Ver Dashboard Completo
+                </a>
+            </div>
+            <div class="col-md-6 text-center">
+                <i class="bi bi-graph-up-arrow" style="font-size: 15rem; color: #667eea; opacity: 0.2;"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-light py-5 mb-5">
+        <div class="container text-center">
+            <h2 class="display-6 fw-bold mb-3">Por que cuidar da saúde mental?</h2>
+            <div class="row mt-4">
+                <div class="col-md-4 mb-3">
+                    <div class="p-4">
+                        <i class="bi bi-heart-fill text-danger fs-1 mb-3 d-block"></i>
+                        <h5>Melhora a Qualidade de Vida</h5>
+                        <p class="text-muted">Uma mente saudável reflete em todos os aspectos da vida.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-4">
+                        <i class="bi bi-shield-check text-success fs-1 mb-3 d-block"></i>
+                        <h5>Previne Problemas Futuros</h5>
+                        <p class="text-muted">Cuidar preventivamente evita complicações emocionais.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-4">
+                        <i class="bi bi-people-fill text-primary fs-1 mb-3 d-block"></i>
+                        <h5>Melhora os Relacionamentos</h5>
+                        <p class="text-muted">Bem-estar emocional fortalece conexões pessoais.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer bg-light text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <h5 class="fw-bold"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</h5>
+                    <p class="text-muted">Sua jornada para o bem-estar começa aqui</p>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="text-muted mb-0">&copy; 2025 Saúde Mental App - Todos os direitos reservados</p>
+                    <p class="text-muted small">Desenvolvido com <i class="bi bi-heart-fill text-danger"></i> usando Spring Boot + Thymeleaf</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

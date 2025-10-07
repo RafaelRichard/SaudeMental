@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Registros de Exercícios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .content-wrapper { min-height: calc(100vh - 120px); }
+        .footer { background-color: #f8f9fa; padding: 20px 0; margin-top: auto; }
+        .modal-header { background-color: #0d6efd; color: white; }
+        .alert-container { position: fixed; top: 80px; right: 20px; z-index: 1055; width: 300px; }
+        .streak-badge { font-size: 1.5rem; font-weight: bold; }
+        .registro-concluido { background-color: #d4edda; border-left: 4px solid #28a745; }
+        .registro-pendente { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="alertContainer" class="alert-container"></div>
+
+    <main class="content-wrapper flex-grow-1">
+        <div class="container my-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-calendar-check text-primary me-2"></i>Registro de Exercícios</h1>
+                    <p class="text-muted mb-0">Acompanhe a realização de exercícios diários</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalRegistro" onclick="abrirModalNovo()">
+                    <i class="bi bi-plus-lg me-2"></i>Novo Registro
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-list-check me-2 text-success"></i>Exercícios Realizados</h5>
+                            <h2 class="text-success mb-0" id="totalRealizados">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-hourglass-split me-2 text-warning"></i>Pendentes</h5>
+                            <h2 class="text-warning mb-0" id="totalPendentes">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body text-white">
+                            <h5 class="card-title"><i class="bi bi-fire me-2"></i>Sequência Atual</h5>
+                            <h2 class="streak-badge mb-0" id="streakAtual">🔥 0 dias</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Usuário</label>
+                            <select class="form-select" id="filtroUsuario" onchange="carregarRegistros()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Exercício</label>
+                            <select class="form-select" id="filtroExercicio" onchange="aplicarFiltros()">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="filtroStatus" onchange="aplicarFiltros()">
+                                <option value="">Todos</option>
+                                <option value="true">Realizados</option>
+                                <option value="false">Pendentes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex">
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="limparFiltros()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Limpar
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="carregarRegistros()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Histórico de Registros</h5>
+                </div>
+                <div class="card-body">
+                    <div id="registrosContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Carregando registros...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="modalRegistro" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalRegistroLabel">
+                                <i class="bi bi-calendar-check me-2"></i>Novo Registro
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="formRegistro">
+                            <div class="modal-body">
+                                <input type="hidden" id="registroId" value="">
+                                <div class="mb-3">
+                                    <label for="usuarioId" class="form-label">Usuário <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="usuarioId" required>
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="exercicioId" class="form-label">Exercício <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="exercicioId" required>
+                                        <option value="">Selecione...</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="data" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="data" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="realizado" checked>
+                                        <label class="form-check-label" for="realizado">
+                                            <strong>Exercício Realizado</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="observacoes" class="form-label">Observações</label>
+                                    <textarea class="form-control" id="observacoes" rows="3" 
+                                              placeholder="Como foi a experiência? (opcional)"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="btnSalvar">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer bg-light text-center">
+        <div class="container"><span class="text-muted">&copy; 2025 Saúde Mental App</span></div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let registroEditando = null;
+        let usuarios = [];
+        let exercicios = [];
+
+        function mostrarAlerta(tipo, titulo, mensagem, tempo = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show">
+                    <strong>${titulo}</strong> ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) new bootstrap.Alert(alert).close();
+            }, tempo);
+        }
+
+        async function fazerRequisicao(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    ...options
+                });
+                if (response.status === 204) return null;
+                const data = await response.json().catch(() => response.text());
+                if (!response.ok) throw new Error(data || `Erro ${response.status}`);
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await carregarUsuarios();
+            await carregarExercicios();
+            await carregarRegistros();
+            document.getElementById('data').valueAsDate = new Date();
+            document.getElementById('formRegistro')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                salvarRegistro();
+            });
+        });
+
+        async function carregarUsuarios() {
+            try {
+                usuarios = await fazerRequisicao('/api/usuarios');
+                const selectUsuario = document.getElementById('usuarioId');
+                const selectFiltro = document.getElementById('filtroUsuario');
+                selectUsuario.innerHTML = '<option value="">Selecione...</option>';
+                selectFiltro.innerHTML = '<option value="">Todos</option>';
+                usuarios.forEach(u => {
+                    selectUsuario.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
+                    selectFiltro.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+            }
+        }
+
+        async function carregarExercicios() {
+            try {
+                exercicios = await fazerRequisicao('/api/exercicios');
+                const selectExercicio = document.getElementById('exercicioId');
+                const selectFiltro = document.getElementById('filtroExercicio');
+                selectExercicio.innerHTML = '<option value="">Selecione...</option>';
+                selectFiltro.innerHTML = '<option value="">Todos</option>';
+                exercicios.forEach(e => {
+                    selectExercicio.innerHTML += `<option value="${e.id}">${e.titulo} (${e.tipo})</option>`;
+                    selectFiltro.innerHTML += `<option value="${e.id}">${e.titulo}</option>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar exercícios:', error);
+            }
+        }
+
+        async function carregarRegistros() {
+            const usuarioId = document.getElementById('filtroUsuario')?.value;
+            const url = usuarioId ? `/api/registros/usuario/${usuarioId}` : '/api/registros';
+            
+            try {
+                const registros = await fazerRequisicao(url);
+                renderizarRegistros(registros);
+                atualizarEstatisticas(registros, usuarioId);
+            } catch (error) {
+                document.getElementById('registrosContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Erro ao carregar registros.
+                    </div>`;
+            }
+        }
+
+        function renderizarRegistros(registros) {
+            const container = document.getElementById('registrosContainer');
+            
+            if (!registros || registros.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p>Nenhum registro encontrado.</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '<div class="list-group">';
+            registros.forEach(reg => {
+                const usuario = usuarios.find(u => u.id === reg.usuarioId);
+                const exercicio = exercicios.find(e => e.id === reg.exercicioId);
+                const classe = reg.realizado ? 'registro-concluido' : 'registro-pendente';
+                const icone = reg.realizado ? 'check-circle-fill text-success' : 'clock text-warning';
+                const status = reg.realizado ? 'Realizado' : 'Pendente';
+                
+                html += `
+                    <div class="list-group-item ${classe}">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">
+                                    <i class="bi bi-${icone} me-2"></i>${exercicio?.titulo || 'Exercício não encontrado'}
+                                </h5>
+                                <p class="mb-1">
+                                    <strong>Usuário:</strong> ${usuario?.nome || 'Desconhecido'} |
+                                    <strong>Data:</strong> ${new Date(reg.data).toLocaleDateString('pt-BR')} |
+                                    <strong>Status:</strong> <span class="badge ${reg.realizado ? 'bg-success' : 'bg-warning'}">${status}</span>
+                                </p>
+                                ${reg.observacoes ? `<small class="text-muted"><i class="bi bi-chat-quote me-1"></i>${reg.observacoes}</small>` : ''}
+                            </div>
+                            <div class="btn-group-vertical" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="abrirModalEditar(${reg.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="excluirRegistro(${reg.id}, '${exercicio?.titulo || 'este registro'}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        async function atualizarEstatisticas(registros, usuarioId) {
+            const realizados = registros.filter(r => r.realizado).length;
+            const pendentes = registros.filter(r => !r.realizado).length;
+            
+            document.getElementById('totalRealizados').textContent = realizados;
+            document.getElementById('totalPendentes').textContent = pendentes;
+
+            if (usuarioId) {
+                try {
+                    const stats = await fazerRequisicao(`/api/registros/usuario/${usuarioId}/estatisticas`);
+                    document.getElementById('streakAtual').textContent = `🔥 ${stats.streak || 0} dias`;
+                } catch (error) {
+                    document.getElementById('streakAtual').textContent = '🔥 0 dias';
+                }
+            } else {
+                document.getElementById('streakAtual').textContent = '🔥 - dias';
+            }
+        }
+
+        function abrirModalNovo() {
+            registroEditando = null;
+            document.getElementById('modalRegistroLabel').innerHTML = '<i class="bi bi-calendar-check me-2"></i>Novo Registro';
+            document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+            document.getElementById('formRegistro').reset();
+            document.getElementById('registroId').value = '';
+            document.getElementById('data').valueAsDate = new Date();
+            document.getElementById('realizado').checked = true;
+            limparValidacoes();
+        }
+
+        async function abrirModalEditar(id) {
+            try {
+                const registro = await fazerRequisicao(`/api/registros/${id}`);
+                registroEditando = registro;
+                document.getElementById('modalRegistroLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Registro';
+                document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Atualizar';
+                document.getElementById('registroId').value = registro.id;
+                document.getElementById('usuarioId').value = registro.usuarioId;
+                document.getElementById('exercicioId').value = registro.exercicioId;
+                document.getElementById('data').value = registro.data;
+                document.getElementById('realizado').checked = registro.realizado;
+                document.getElementById('observacoes').value = registro.observacoes || '';
+                limparValidacoes();
+                new bootstrap.Modal(document.getElementById('modalRegistro')).show();
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar: ' + error.message);
+            }
+        }
+
+        async function salvarRegistro() {
+            const registro = {
+                usuarioId: parseInt(document.getElementById('usuarioId').value),
+                exercicioId: parseInt(document.getElementById('exercicioId').value),
+                data: document.getElementById('data').value,
+                realizado: document.getElementById('realizado').checked,
+                observacoes: document.getElementById('observacoes').value.trim() || null
+            };
+
+            if (!validarFormulario(registro)) return;
+
+            const btnSalvar = document.getElementById('btnSalvar');
+            const textoOriginal = btnSalvar.innerHTML;
+            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+            btnSalvar.disabled = true;
+
+            try {
+                if (registroEditando) {
+                    await fazerRequisicao(`/api/registros/${registroEditando.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(registro)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Registro atualizado.');
+                } else {
+                    await fazerRequisicao('/api/registros', {
+                        method: 'POST',
+                        body: JSON.stringify(registro)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Registro criado.');
+                }
+                bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide();
+                setTimeout(() => carregarRegistros(), 500);
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', error.message || 'Erro ao salvar.');
+            } finally {
+                btnSalvar.innerHTML = textoOriginal;
+                btnSalvar.disabled = false;
+            }
+        }
+
+        function validarFormulario(registro) {
+            let valido = true;
+            limparValidacoes();
+            if (!registro.usuarioId) {
+                mostrarErroValidacao('usuarioId', 'Selecione um usuário.');
+                valido = false;
+            }
+            if (!registro.exercicioId) {
+                mostrarErroValidacao('exercicioId', 'Selecione um exercício.');
+                valido = false;
+            }
+            if (!registro.data) {
+                mostrarErroValidacao('data', 'Informe a data.');
+                valido = false;
+            }
+            return valido;
+        }
+
+        function mostrarErroValidacao(campo, mensagem) {
+            const input = document.getElementById(campo);
+            const feedback = input.parentNode.querySelector('.invalid-feedback');
+            input.classList.add('is-invalid');
+            if (feedback) feedback.textContent = mensagem;
+        }
+
+        function limparValidacoes() {
+            document.querySelectorAll('#formRegistro .form-control, #formRegistro .form-select').forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        async function excluirRegistro(id, titulo) {
+            if (confirm(`Tem certeza que deseja excluir o registro de "${titulo}"?`)) {
+                try {
+                    await fazerRequisicao(`/api/registros/${id}`, { method: 'DELETE' });
+                    mostrarAlerta('success', 'Sucesso!', 'Registro excluído.');
+                    setTimeout(() => carregarRegistros(), 500);
+                } catch (error) {
+                    mostrarAlerta('danger', 'Erro!', 'Não foi possível excluir.');
+                }
+            }
+        }
+
+        function aplicarFiltros() {
+            // Implementação simplificada - recarrega com filtros
+            carregarRegistros();
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtroUsuario').value = '';
+            document.getElementById('filtroExercicio').value = '';
+            document.getElementById('filtroStatus').value = '';
+            carregarRegistros();
+        }
+    </script>
+</body>
+</html>

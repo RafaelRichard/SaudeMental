@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Mental App - Exercícios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .navbar-brand { font-weight: bold; }
+        .content-wrapper { min-height: calc(100vh - 120px); }
+        .footer { background-color: #f8f9fa; padding: 20px 0; margin-top: auto; }
+        .modal-header { background-color: #0d6efd; color: white; }
+        .alert-container { position: fixed; top: 80px; right: 20px; z-index: 1055; width: 300px; }
+        .exercicio-card { transition: transform 0.2s; cursor: pointer; }
+        .exercicio-card:hover { transform: translateY(-5px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .badge-tipo { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="bi bi-heart-pulse me-2"></i>Saúde Mental App</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/usuarios"><i class="bi bi-people me-1"></i>Usuários</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/exercicios"><i class="bi bi-clipboard-heart me-1"></i>Exercícios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/registros"><i class="bi bi-calendar-check me-1"></i>Registros</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/questionarios"><i class="bi bi-journal-medical me-1"></i>Questionários</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-graph-up-arrow me-1"></i>Dashboard</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="alertContainer" class="alert-container"></div>
+
+    <main class="content-wrapper flex-grow-1">
+        <div class="container my-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-clipboard-heart text-primary me-2"></i>Exercícios de Bem-Estar</h1>
+                    <p class="text-muted mb-0">Gerencie os exercícios recomendados para saúde mental</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalExercicio" onclick="abrirModalNovo()">
+                    <i class="bi bi-plus-lg me-2"></i>Novo Exercício
+                </button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h5 class="card-title">Total de Exercícios</h5>
+                                    <h3 class="mb-0" th:text="${#lists.size(exercicios)}">0</h3>
+                                </div>
+                                <div class="align-self-center"><i class="bi bi-clipboard-heart fs-1"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="inputBusca" placeholder="Buscar exercício...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="filtroTipo">
+                                <option value="">Todos os Tipos</option>
+                                <option value="RESPIRACAO">Respiração</option>
+                                <option value="MEDITACAO">Meditação</option>
+                                <option value="DIARIO">Diário</option>
+                                <option value="RELAXAMENTO">Relaxamento</option>
+                                <option value="MINDFULNESS">Mindfulness</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-outline-secondary me-2" onclick="limparFiltros()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Limpar
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="carregarExercicios()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" id="exerciciosContainer">
+                <div th:if="${#lists.isEmpty(exercicios)}" class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p>Nenhum exercício cadastrado ainda.</p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalExercicio" onclick="abrirModalNovo()">
+                            <i class="bi bi-plus-lg me-1"></i>Cadastrar Primeiro Exercício
+                        </button>
+                    </div>
+                </div>
+
+                <div th:each="exercicio : ${exercicios}" class="col-md-6 col-lg-4 mb-4">
+                    <div class="card exercicio-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title" th:text="${exercicio.titulo}">Título</h5>
+                                <span class="badge badge-tipo" 
+                                      th:classappend="${exercicio.tipo == T(com.saudemental.app.entity.Exercicio.TipoExercicio).RESPIRACAO} ? 'bg-info' : 
+                                                     (${exercicio.tipo == T(com.saudemental.app.entity.Exercicio.TipoExercicio).MEDITACAO} ? 'bg-success' : 
+                                                     (${exercicio.tipo == T(com.saudemental.app.entity.Exercicio.TipoExercicio).DIARIO} ? 'bg-warning' : 
+                                                     (${exercicio.tipo == T(com.saudemental.app.entity.Exercicio.TipoExercicio).RELAXAMENTO} ? 'bg-purple' : 'bg-primary')))"
+                                      th:text="${exercicio.tipo}">TIPO</span>
+                            </div>
+                            <p class="card-text text-muted" th:text="${#strings.abbreviate(exercicio.descricao, 100)}">Descrição</p>
+                            <div class="btn-group w-100 mt-3" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" 
+                                        th:data-id="${exercicio.id}"
+                                        onclick="abrirModalEditar(this.dataset.id)">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                        th:data-id="${exercicio.id}"
+                                        th:data-titulo="${exercicio.titulo}"
+                                        onclick="excluirExercicio(this.dataset.id, this.dataset.titulo)">
+                                    <i class="bi bi-trash"></i> Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="modalExercicio" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalExercicioLabel">
+                                <i class="bi bi-clipboard-heart me-2"></i>Novo Exercício
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form id="formExercicio">
+                            <div class="modal-body">
+                                <input type="hidden" id="exercicioId" value="">
+                                <div class="mb-3">
+                                    <label for="titulo" class="form-label">Título <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="titulo" required placeholder="Ex: Respiração Profunda">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="tipo" required>
+                                        <option value="">Selecione...</option>
+                                        <option value="RESPIRACAO">Respiração</option>
+                                        <option value="MEDITACAO">Meditação</option>
+                                        <option value="DIARIO">Diário</option>
+                                        <option value="RELAXAMENTO">Relaxamento</option>
+                                        <option value="MINDFULNESS">Mindfulness</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="descricao" class="form-label">Descrição <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="descricao" rows="4" required 
+                                              placeholder="Descreva como realizar este exercício..."></textarea>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="btnSalvar">
+                                    <i class="bi bi-check-lg me-1"></i>Salvar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer bg-light text-center">
+        <div class="container"><span class="text-muted">&copy; 2025 Saúde Mental App</span></div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let exercicioEditando = null;
+
+        function mostrarAlerta(tipo, titulo, mensagem, tempo = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show">
+                    <strong>${titulo}</strong> ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>`;
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) new bootstrap.Alert(alert).close();
+            }, tempo);
+        }
+
+        async function fazerRequisicao(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Content-Type': 'application/json', ...options.headers },
+                    ...options
+                });
+                const data = await response.json().catch(() => response.text());
+                if (!response.ok) throw new Error(data || `Erro ${response.status}`);
+                return data;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('inputBusca')?.addEventListener('input', aplicarFiltros);
+            document.getElementById('filtroTipo')?.addEventListener('change', aplicarFiltros);
+            document.getElementById('formExercicio')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                salvarExercicio();
+            });
+            document.getElementById('modalExercicio')?.addEventListener('hidden.bs.modal', limparValidacoes);
+        });
+
+        function abrirModalNovo() {
+            exercicioEditando = null;
+            document.getElementById('modalExercicioLabel').innerHTML = '<i class="bi bi-clipboard-heart me-2"></i>Novo Exercício';
+            document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Salvar';
+            document.getElementById('formExercicio').reset();
+            document.getElementById('exercicioId').value = '';
+            limparValidacoes();
+        }
+
+        async function abrirModalEditar(id) {
+            try {
+                const exercicio = await fazerRequisicao(`/api/exercicios/${id}`);
+                exercicioEditando = exercicio;
+                document.getElementById('modalExercicioLabel').innerHTML = '<i class="bi bi-pencil me-2"></i>Editar Exercício';
+                document.getElementById('btnSalvar').innerHTML = '<i class="bi bi-check-lg me-1"></i>Atualizar';
+                document.getElementById('exercicioId').value = exercicio.id;
+                document.getElementById('titulo').value = exercicio.titulo;
+                document.getElementById('tipo').value = exercicio.tipo;
+                document.getElementById('descricao').value = exercicio.descricao;
+                limparValidacoes();
+                new bootstrap.Modal(document.getElementById('modalExercicio')).show();
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', 'Não foi possível carregar: ' + error.message);
+            }
+        }
+
+        async function salvarExercicio() {
+            const formData = new FormData(document.getElementById('formExercicio'));
+            const exercicio = {
+                titulo: formData.get('titulo')?.trim() || document.getElementById('titulo').value.trim(),
+                tipo: formData.get('tipo') || document.getElementById('tipo').value,
+                descricao: formData.get('descricao')?.trim() || document.getElementById('descricao').value.trim()
+            };
+
+            if (!validarFormulario(exercicio)) return;
+
+            const btnSalvar = document.getElementById('btnSalvar');
+            const textoOriginal = btnSalvar.innerHTML;
+            btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+            btnSalvar.disabled = true;
+
+            try {
+                if (exercicioEditando) {
+                    await fazerRequisicao(`/api/exercicios/${exercicioEditando.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(exercicio)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Exercício atualizado.');
+                } else {
+                    await fazerRequisicao('/api/exercicios', {
+                        method: 'POST',
+                        body: JSON.stringify(exercicio)
+                    });
+                    mostrarAlerta('success', 'Sucesso!', 'Exercício criado.');
+                }
+                bootstrap.Modal.getInstance(document.getElementById('modalExercicio')).hide();
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                mostrarAlerta('danger', 'Erro!', error.message || 'Erro ao salvar.');
+            } finally {
+                btnSalvar.innerHTML = textoOriginal;
+                btnSalvar.disabled = false;
+            }
+        }
+
+        function validarFormulario(exercicio) {
+            let valido = true;
+            limparValidacoes();
+            if (!exercicio.titulo || exercicio.titulo.length < 3) {
+                mostrarErroValidacao('titulo', 'Título deve ter pelo menos 3 caracteres.');
+                valido = false;
+            }
+            if (!exercicio.tipo) {
+                mostrarErroValidacao('tipo', 'Selecione um tipo.');
+                valido = false;
+            }
+            if (!exercicio.descricao || exercicio.descricao.length < 10) {
+                mostrarErroValidacao('descricao', 'Descrição deve ter pelo menos 10 caracteres.');
+                valido = false;
+            }
+            return valido;
+        }
+
+        function mostrarErroValidacao(campo, mensagem) {
+            const input = document.getElementById(campo);
+            const feedback = input.parentNode.querySelector('.invalid-feedback');
+            input.classList.add('is-invalid');
+            if (feedback) feedback.textContent = mensagem;
+        }
+
+        function limparValidacoes() {
+            document.querySelectorAll('#formExercicio .form-control, #formExercicio .form-select').forEach(input => {
+                input.classList.remove('is-invalid', 'is-valid');
+            });
+        }
+
+        async function excluirExercicio(id, titulo) {
+            if (confirm(`Tem certeza que deseja excluir "${titulo}"?`)) {
+                try {
+                    await fazerRequisicao(`/api/exercicios/${id}`, { method: 'DELETE' });
+                    mostrarAlerta('success', 'Sucesso!', `Exercício "${titulo}" excluído.`);
+                    setTimeout(() => window.location.reload(), 1000);
+                } catch (error) {
+                    mostrarAlerta('danger', 'Erro!', 'Não foi possível excluir.');
+                }
+            }
+        }
+
+        function carregarExercicios() {
+            window.location.reload();
+        }
+
+        function aplicarFiltros() {
+            const busca = document.getElementById('inputBusca')?.value.toLowerCase() || '';
+            const tipoFiltro = document.getElementById('filtroTipo')?.value || '';
+            document.querySelectorAll('.exercicio-card').forEach(card => {
+                const texto = card.textContent.toLowerCase();
+                const badge = card.querySelector('.badge-tipo')?.textContent || '';
+                const matchBusca = texto.includes(busca);
+                const matchTipo = !tipoFiltro || badge === tipoFiltro;
+                card.parentElement.style.display = (matchBusca && matchTipo) ? '' : 'none';
+            });
+        }
+
+        function limparFiltros() {
+            document.getElementById('inputBusca').value = '';
+            document.getElementById('filtroTipo').value = '';
+            aplicarFiltros();
+        }
+    </script>
+</body>
+</html>
